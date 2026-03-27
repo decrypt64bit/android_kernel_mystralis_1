@@ -17,7 +17,8 @@
 #ifndef _OPPO_CRED_H
 #define _OPPO_CRED_H
 
-#include "cred.h"
+#include <linux/sched.h>
+#include <linux/cred.h>
 
 #ifdef CONFIG_PRODUCT_REALME_SDM710
 #ifdef CONFIG_OPPO_FG_OPT

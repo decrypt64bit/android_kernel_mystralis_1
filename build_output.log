@@ -1,0 +1,11 @@
+  GEN     ./Makefile
+  HOSTCC  scripts/basic/fixdep
+  HOSTCC  scripts/kconfig/conf.o
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+arch/arm64/configs/RMX1971_defconfig:459:warning: override: reassigning to symbol HID_SONY
+arch/arm64/configs/RMX1971_defconfig:733:warning: override: reassigning to symbol PROCESS_RECLAIM
+arch/arm64/configs/RMX1971_defconfig:743:warning: override: reassigning to symbol OVERLAY_FS
+#
+# configuration written to .config
+#

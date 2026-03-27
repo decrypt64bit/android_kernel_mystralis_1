@@ -1,0 +1,20 @@
+make-4.3[1]: Circular vdso_prepare <- vdso_prepare dependency dropped.
+../drivers/kernelsu/sucompat.c:83:2: error: implicit declaration of function 'strncpy_from_user_nofault' [-Werror,-Wimplicit-function-declaration]
+        strncpy_from_user_nofault(path, *filename_user, sizeof(path));
+        ^
+../drivers/kernelsu/sucompat.c:83:2: note: did you mean 'strncpy_from_user'?
+../arch/arm64/include/asm/uaccess.h:491:13: note: 'strncpy_from_user' declared here
+extern long strncpy_from_user(char *dest, const char __user *src, long count);
+            ^
+../drivers/kernelsu/sucompat.c:109:2: error: implicit declaration of function 'strncpy_from_user_nofault' [-Werror,-Wimplicit-function-declaration]
+        strncpy_from_user_nofault(path, *filename_user, sizeof(path));
+        ^
+2 errors generated.
+make-4.3[3]: *** [../scripts/Makefile.build:342: drivers/kernelsu/sucompat.o] Error 1
+make-4.3[2]: *** [../scripts/Makefile.build:656: drivers/kernelsu] Error 2
+make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1145: drivers] Error 2
+make-4.3[1]: *** Waiting for unfinished jobs....
+make-4.3[3]: *** [../scripts/Makefile.build:656: techpack/audio/ipc] Interrupt
+make-4.3[2]: *** [../scripts/Makefile.build:656: techpack/audio] Interrupt
+make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1145: techpack] Interrupt
+make-4.3: *** [Makefile:152: sub-make] Interrupt

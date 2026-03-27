@@ -40,7 +40,8 @@ void aes_cipher_encrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
 
 	kernel_neon_begin_partial(4);
 
-	__asm__("	ld1	{v0.16b}, %[in]			;"
+	__asm__("       .arch   armv8-a+crypto                  ;"
+	        "       ld1     {v0.16b}, %[in]                 ;"
 		"	ld1	{v1.16b}, [%[key]], #16		;"
 		"	cmp	%w[rounds], #10			;"
 		"	bmi	0f				;"
@@ -85,7 +86,8 @@ void aes_cipher_decrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
 
 	kernel_neon_begin_partial(4);
 
-	__asm__("	ld1	{v0.16b}, %[in]			;"
+	__asm__("       .arch   armv8-a+crypto                  ;"
+	        "       ld1     {v0.16b}, %[in]                 ;"
 		"	ld1	{v1.16b}, [%[key]], #16		;"
 		"	cmp	%w[rounds], #10			;"
 		"	bmi	0f				;"
@@ -128,11 +130,11 @@ static u32 aes_sub(u32 input)
 {
 	u32 ret;
 
-	__asm__("dup	v1.4s, %w[in]		;"
-		"movi	v0.16b, #0		;"
-		"aese	v0.16b, v1.16b		;"
-		"umov	%w[out], v0.4s[0]	;"
-
+	__asm__("       .arch   armv8-a+crypto                  ;"
+	        "       dup     v1.4s, %w[in]                   ;"
+	        "       movi    v0.16b, #0                      ;"
+	        "       aese    v0.16b, v1.16b                  ;"
+	        "       umov    %w[out], v0.s[0]                ;"
 	:	[out]	"=r"(ret)
 	:	[in]	"r"(input)
 	:		"v0","v1");
@@ -204,7 +206,8 @@ int ce_aes_expandkey(struct crypto_aes_ctx *ctx, const u8 *in_key,
 
 	key_dec[0] = key_enc[j];
 	for (i = 1, j--; j > 0; i++, j--)
-		__asm__("ld1	{v0.16b}, %[in]		;"
+		__asm__("       .arch   armv8-a+crypto                  ;"
+		        "       ld1     {v0.16b}, %[in]                 ;"
 			"aesimc	v1.16b, v0.16b		;"
 			"st1	{v1.16b}, %[out]	;"
 
