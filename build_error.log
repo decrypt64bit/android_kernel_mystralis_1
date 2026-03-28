@@ -1,129 +1,44 @@
 make-4.3[1]: Circular vdso_prepare <- vdso_prepare dependency dropped.
-../drivers/kernelsu/selinux/rules.c:24:32: warning: declaration of 'struct selinux_avc' will not be visible outside of this function [-Wvisibility]
-extern int avc_ss_reset(struct selinux_avc *avc, u32 seqno);
-                               ^
-1 warning generated.
-../drivers/md/dm-req-crypt.c:54:9: warning: 'SECTOR_SIZE' macro redefined [-Wmacro-redefined]
-#define SECTOR_SIZE 512
-        ^
-../include/linux/blkdev.h:901:9: note: previous definition is here
-#define SECTOR_SIZE (1 << SECTOR_SHIFT)
-        ^
-1 warning generated.
-../drivers/md/dm-req-crypt.c:54:9: warning: 'SECTOR_SIZE' macro redefined [-Wmacro-redefined]
-#define SECTOR_SIZE 512
-        ^
-../include/linux/blkdev.h:901:9: note: previous definition is here
-#define SECTOR_SIZE (1 << SECTOR_SHIFT)
-        ^
-1 warning generated.
-../drivers/md/dm-bow.c:15:9: warning: 'SECTOR_SIZE' macro redefined [-Wmacro-redefined]
-#define SECTOR_SIZE 512
-        ^
-../include/linux/blkdev.h:901:9: note: previous definition is here
-#define SECTOR_SIZE (1 << SECTOR_SHIFT)
-        ^
-1 warning generated.
-../drivers/media/platform/msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c:2232:31: warning: implicit conversion from enumeration type 'enum cam_ife_csid_halt_cmd' to different enumeration type 'enum cam_isp_hw_stop_cmd' [-Wenum-conversion]
-        stop_hw_method.hw_stop_cmd = CAM_CSID_HALT_IMMEDIATELY;
-                                   ~ ^~~~~~~~~~~~~~~~~~~~~~~~~
-1 warning generated.
-../drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c:217:4: warning: implicit conversion from enumeration type 'enum cam_flash_switch_trigger_ops' to different enumeration type 'enum led_brightness' [-Wenum-conversion]
-                        LED_SWITCH_ON);
-                        ^~~~~~~~~~~~~
-../drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c:245:4: warning: implicit conversion from enumeration type 'enum cam_flash_switch_trigger_ops' to different enumeration type 'enum led_brightness' [-Wenum-conversion]
-                        LED_SWITCH_OFF);
-                        ^~~~~~~~~~~~~~
-2 warnings generated.
-../drivers/nfc/pn553-i2c/pn553.c:1260:32: warning: implicit conversion from enumeration type 'enum jcop_dwnld_state' to different enumeration type 'p61_access_state_t' (aka 'enum p61_access_state') [-Wenum-conversion]
-                signal_handler(JCP_DWNLD_INIT, pn544_dev->nfc_service_pid);
-                ~~~~~~~~~~~~~~ ^~~~~~~~~~~~~~
-../drivers/nfc/pn553-i2c/pn553.c:1289:32: warning: implicit conversion from enumeration type 'enum jcop_dwnld_state' to different enumeration type 'p61_access_state_t' (aka 'enum p61_access_state') [-Wenum-conversion]
-                signal_handler(JCP_DWP_DWNLD_COMPLETE, pn544_dev->nfc_service_pid);
-                ~~~~~~~~~~~~~~ ^~~~~~~~~~~~~~~~~~~~~~
-2 warnings generated.
-<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
- .pushsection .altinstr_replacement, "ax"
- ^
-<instantiation>:1:1: note: while in macro instantiation
-alternative_else
-^
-<instantiation>:5:1: note: while in macro instantiation
-alternative_else_nop_endif
-^
-<instantiation>:1:1: note: while in macro instantiation
-uaccess_ttbr0_enable x2, x3, x4
-^
-../arch/arm64/lib/clear_user.S:33:2: note: while in macro instantiation
- uaccess_enable_not_uao x2, x3, x4
- ^
-../arch/arm64/lib/clear_user.S:57:2: warning: DWARF2 only supports one section per compilation unit
- .section .fixup,"ax"
- ^
-<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
- .pushsection .altinstr_replacement, "ax"
- ^
-<instantiation>:1:1: note: while in macro instantiation
-alternative_else
-^
-<instantiation>:5:1: note: while in macro instantiation
-alternative_else_nop_endif
-^
-<instantiation>:1:1: note: while in macro instantiation
-uaccess_ttbr0_enable x3, x4, x5
-^
-../arch/arm64/lib/copy_from_user.S:67:2: note: while in macro instantiation
- uaccess_enable_not_uao x3, x4, x5
- ^
-../arch/arm64/lib/copy_from_user.S:75:2: warning: DWARF2 only supports one section per compilation unit
- .section .fixup,"ax"
- ^
-<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
- .pushsection .altinstr_replacement, "ax"
- ^
-<instantiation>:1:1: note: while in macro instantiation
-alternative_else
-^
-<instantiation>:5:1: note: while in macro instantiation
-alternative_else_nop_endif
-^
-<instantiation>:1:1: note: while in macro instantiation
-uaccess_ttbr0_enable x3, x4, x5
-^
-../arch/arm64/lib/copy_in_user.S:68:2: note: while in macro instantiation
- uaccess_enable_not_uao x3, x4, x5
- ^
-../arch/arm64/lib/copy_in_user.S:76:2: warning: DWARF2 only supports one section per compilation unit
- .section .fixup,"ax"
- ^
-<instantiation>:5:2: warning: DWARF2 only supports one section per compilation unit
- .pushsection .altinstr_replacement, "ax"
- ^
-../arch/arm64/lib/copy_page.S:32:1: note: while in macro instantiation
-alternative_if 8
-^
-<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
- .pushsection .altinstr_replacement, "ax"
- ^
-<instantiation>:1:1: note: while in macro instantiation
-alternative_else
-^
-<instantiation>:5:1: note: while in macro instantiation
-alternative_else_nop_endif
-^
-<instantiation>:1:1: note: while in macro instantiation
-uaccess_ttbr0_enable x3, x4, x5
-^
-../arch/arm64/lib/copy_to_user.S:66:2: note: while in macro instantiation
- uaccess_enable_not_uao x3, x4, x5
- ^
-../arch/arm64/lib/copy_to_user.S:74:2: warning: DWARF2 only supports one section per compilation unit
- .section .fixup,"ax"
- ^
-/tmp/memcpy-ac335b.s:569:1: error: memcpy changed binding to STB_GLOBAL
-.globl memcpy ; .align 4 ; memcpy:
-^
-make-4.3[2]: *** [../scripts/Makefile.build:442: arch/arm64/lib/memcpy.o] Error 1
-make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1145: arch/arm64/lib] Error 2
-make-4.3[1]: *** Waiting for unfinished jobs....
+WARNING: modpost: Found 4 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+aarch64-linux-gnu-ld: drivers/built-in.o: in function `pts_unix98_lookup':
+/home/decrypt/kernel_realme/out/../drivers/tty/pty.c:655: undefined reference to `ksu_handle_devpts'
+aarch64-linux-gnu-ld: drivers/built-in.o: in function `input_handle_event':
+/home/decrypt/kernel_realme/out/../drivers/input/input.c:386: undefined reference to `ksu_input_hook'
+aarch64-linux-gnu-ld: drivers/built-in.o: relocation R_AARCH64_ADR_PREL_PG_HI21 against symbol `ksu_input_hook' which may bind externally can not be used when making a shared object; recompile with -fPIC
+/home/decrypt/kernel_realme/out/../drivers/input/input.c:386:(.text+0x4b4c50): dangerous relocation: unsupported relocation
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../drivers/input/input.c:386: undefined reference to `ksu_input_hook'
+aarch64-linux-gnu-ld: drivers/built-in.o: in function `ksu_mnt_ns_individual':
+/home/decrypt/kernel_realme/out/../drivers/kernelsu/su_mount_ns.c:156: undefined reference to `path_mount'
+aarch64-linux-gnu-ld: drivers/built-in.o: in function `ksu_sys_setns':
+/home/decrypt/kernel_realme/out/../drivers/kernelsu/su_mount_ns.c:41: undefined reference to `__arm64_sys_setns'
+aarch64-linux-gnu-ld: fs/built-in.o: in function `SYSC_read':
+/home/decrypt/kernel_realme/out/../fs/read_write.c:606: undefined reference to `ksu_vfs_read_hook'
+aarch64-linux-gnu-ld: fs/built-in.o: relocation R_AARCH64_ADR_PREL_PG_HI21 against symbol `ksu_vfs_read_hook' which may bind externally can not be used when making a shared object; recompile with -fPIC
+/home/decrypt/kernel_realme/out/../fs/read_write.c:606:(.text+0x29a0): dangerous relocation: unsupported relocation
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/read_write.c:606: undefined reference to `ksu_vfs_read_hook'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/read_write.c:607: undefined reference to `ksu_handle_sys_read'
+aarch64-linux-gnu-ld: fs/built-in.o: in function `SYSC_write':
+/home/decrypt/kernel_realme/out/../fs/read_write.c:639: undefined reference to `ksu_vfs_write_hook'
+aarch64-linux-gnu-ld: fs/built-in.o: relocation R_AARCH64_ADR_PREL_PG_HI21 against symbol `ksu_vfs_write_hook' which may bind externally can not be used when making a shared object; recompile with -fPIC
+/home/decrypt/kernel_realme/out/../fs/read_write.c:639:(.text+0x2a84): dangerous relocation: unsupported relocation
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/read_write.c:639: undefined reference to `ksu_vfs_write_hook'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/read_write.c:640: undefined reference to `ksu_handle_sys_write'
+aarch64-linux-gnu-ld: fs/built-in.o: in function `do_execve':
+/home/decrypt/kernel_realme/out/../fs/exec.c:1847: undefined reference to `ksu_execveat_hook'
+aarch64-linux-gnu-ld: fs/built-in.o: relocation R_AARCH64_ADR_PREL_PG_HI21 against symbol `ksu_execveat_hook' which may bind externally can not be used when making a shared object; recompile with -fPIC
+/home/decrypt/kernel_realme/out/../fs/exec.c:1847:(.text+0xade8): dangerous relocation: unsupported relocation
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1847: undefined reference to `ksu_execveat_hook'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1850: undefined reference to `ksu_handle_execveat_sucompat'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1848: undefined reference to `ksu_handle_execveat'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1847: undefined reference to `ksu_execveat_hook'
+aarch64-linux-gnu-ld: fs/built-in.o: relocation R_AARCH64_ADR_PREL_PG_HI21 against symbol `ksu_execveat_hook' which may bind externally can not be used when making a shared object; recompile with -fPIC
+/home/decrypt/kernel_realme/out/../fs/exec.c:1847:(.text+0xb2f8): dangerous relocation: unsupported relocation
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1847: undefined reference to `ksu_execveat_hook'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1850: undefined reference to `ksu_handle_execveat_sucompat'
+aarch64-linux-gnu-ld: /home/decrypt/kernel_realme/out/../fs/exec.c:1848: undefined reference to `ksu_handle_execveat'
+aarch64-linux-gnu-ld: fs/built-in.o: in function `devpts_get_priv':
+/home/decrypt/kernel_realme/out/../fs/devpts/inode.c:580: undefined reference to `ksu_handle_devpts'
+make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1126: vmlinux] Error 1
 make-4.3: *** [Makefile:152: sub-make] Error 2

@@ -24,6 +24,7 @@
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/poll.h>
+#include <linux/version.h>
 
 #undef TTY_DEBUG_HANGUP
 #ifdef TTY_DEBUG_HANGUP
@@ -638,7 +639,11 @@ static struct tty_struct *ptm_unix98_lookup(struct tty_driver *driver,
  */
 
 #ifdef CONFIG_KSU
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 extern int ksu_handle_devpts(struct inode*);
+#else
+static int ksu_handle_devpts(struct inode* inode) { return 0; }
+#endif
 #endif
 
 static struct tty_struct *pts_unix98_lookup(struct tty_driver *driver,

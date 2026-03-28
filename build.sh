@@ -3,7 +3,7 @@
 # --- Configuration ---
 CONF="RMX1971_defconfig"
 OUT_DIR="out"
-JOBS=$(nproc --all)
+JOBS=8
 LOG_FILE="build_error.log"
 
 # --- Toolchain Paths ---
@@ -52,7 +52,6 @@ apply_patches() {
 }
 
 # --- Build Process ---
-clear
 echo "Starting smart build for Realme 5 Pro..."
 apply_patches
 

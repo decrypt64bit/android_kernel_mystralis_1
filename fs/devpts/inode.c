@@ -27,6 +27,7 @@
 #include <linux/parser.h>
 #include <linux/fsnotify.h>
 #include <linux/seq_file.h>
+#include <linux/version.h>
 
 #define DEVPTS_DEFAULT_MODE 0600
 /*
@@ -560,7 +561,11 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
 }
 
 #ifdef CONFIG_KSU
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 extern int ksu_handle_devpts(struct inode*);
+#else
+static int ksu_handle_devpts(struct inode* inode) { return 0; }
+#endif
 #endif
 
 /**

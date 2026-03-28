@@ -28,6 +28,7 @@
 #include <linux/mutex.h>
 #include <linux/rcupdate.h>
 #include "input-compat.h"
+#include <linux/version.h>
 
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@suse.cz>");
 MODULE_DESCRIPTION("Input core");
@@ -367,8 +368,13 @@ static int input_get_disposition(struct input_dev *dev,
 }
 
 #ifdef CONFIG_KSU
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 extern bool ksu_input_hook __read_mostly;
 extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);
+#else
+static bool ksu_input_hook __read_mostly = false;
+static int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value) { return 0; }
+#endif
 #endif
 
 static void input_handle_event(struct input_dev *dev,

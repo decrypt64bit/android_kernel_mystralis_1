@@ -19,6 +19,7 @@
 #include <linux/mount.h>
 #include <linux/fs.h>
 #include "internal.h"
+#include <linux/version.h>
 
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
@@ -582,9 +583,15 @@ static inline void file_pos_write(struct file *file, loff_t pos)
 }
 
 #ifdef CONFIG_KSU
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 extern bool ksu_vfs_read_hook __read_mostly;
 extern int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
                                size_t *count_ptr);
+#else
+static bool ksu_vfs_read_hook __read_mostly = false;
+static int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
+                               size_t *count_ptr) { return 0; }
+#endif
 #endif
 
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
@@ -609,9 +616,15 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 }
 
 #ifdef CONFIG_KSU
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 extern bool ksu_vfs_write_hook __read_mostly;
 extern int ksu_handle_sys_write(unsigned int fd, const char __user **buf_ptr,
                                 size_t *count_ptr);
+#else
+static bool ksu_vfs_write_hook __read_mostly = false;
+static int ksu_handle_sys_write(unsigned int fd, const char __user **buf_ptr,
+                                size_t *count_ptr) { return 0; }
+#endif
 #endif
 
 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf, size_t, count)

@@ -28,6 +28,7 @@
 #include <linux/mm.h>
 #include <linux/vmacache.h>
 #include <linux/stat.h>
+#include <linux/version.h>
 #include <linux/fcntl.h>
 #include <linux/swap.h>
 #include <linux/string.h>
@@ -1821,11 +1822,19 @@ out_ret:
 }
 
 #ifdef CONFIG_KSU
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 extern bool ksu_execveat_hook __read_mostly;
 extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
 			void *envp, int *flags);
 extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 				 void *argv, void *envp, int *flags);
+#else
+static bool ksu_execveat_hook __read_mostly = false;
+static int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+			void *envp, int *flags) { return 0; }
+static int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
+				 void *argv, void *envp, int *flags) { return 0; }
+#endif
 #endif
 
 int do_execve(struct filename *filename,
