@@ -1,20 +1,129 @@
 make-4.3[1]: Circular vdso_prepare <- vdso_prepare dependency dropped.
-../drivers/kernelsu/sucompat.c:83:2: error: implicit declaration of function 'strncpy_from_user_nofault' [-Werror,-Wimplicit-function-declaration]
-        strncpy_from_user_nofault(path, *filename_user, sizeof(path));
+../drivers/kernelsu/selinux/rules.c:24:32: warning: declaration of 'struct selinux_avc' will not be visible outside of this function [-Wvisibility]
+extern int avc_ss_reset(struct selinux_avc *avc, u32 seqno);
+                               ^
+1 warning generated.
+../drivers/md/dm-req-crypt.c:54:9: warning: 'SECTOR_SIZE' macro redefined [-Wmacro-redefined]
+#define SECTOR_SIZE 512
         ^
-../drivers/kernelsu/sucompat.c:83:2: note: did you mean 'strncpy_from_user'?
-../arch/arm64/include/asm/uaccess.h:491:13: note: 'strncpy_from_user' declared here
-extern long strncpy_from_user(char *dest, const char __user *src, long count);
-            ^
-../drivers/kernelsu/sucompat.c:109:2: error: implicit declaration of function 'strncpy_from_user_nofault' [-Werror,-Wimplicit-function-declaration]
-        strncpy_from_user_nofault(path, *filename_user, sizeof(path));
+../include/linux/blkdev.h:901:9: note: previous definition is here
+#define SECTOR_SIZE (1 << SECTOR_SHIFT)
         ^
-2 errors generated.
-make-4.3[3]: *** [../scripts/Makefile.build:342: drivers/kernelsu/sucompat.o] Error 1
-make-4.3[2]: *** [../scripts/Makefile.build:656: drivers/kernelsu] Error 2
-make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1145: drivers] Error 2
+1 warning generated.
+../drivers/md/dm-req-crypt.c:54:9: warning: 'SECTOR_SIZE' macro redefined [-Wmacro-redefined]
+#define SECTOR_SIZE 512
+        ^
+../include/linux/blkdev.h:901:9: note: previous definition is here
+#define SECTOR_SIZE (1 << SECTOR_SHIFT)
+        ^
+1 warning generated.
+../drivers/md/dm-bow.c:15:9: warning: 'SECTOR_SIZE' macro redefined [-Wmacro-redefined]
+#define SECTOR_SIZE 512
+        ^
+../include/linux/blkdev.h:901:9: note: previous definition is here
+#define SECTOR_SIZE (1 << SECTOR_SHIFT)
+        ^
+1 warning generated.
+../drivers/media/platform/msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c:2232:31: warning: implicit conversion from enumeration type 'enum cam_ife_csid_halt_cmd' to different enumeration type 'enum cam_isp_hw_stop_cmd' [-Wenum-conversion]
+        stop_hw_method.hw_stop_cmd = CAM_CSID_HALT_IMMEDIATELY;
+                                   ~ ^~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+../drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c:217:4: warning: implicit conversion from enumeration type 'enum cam_flash_switch_trigger_ops' to different enumeration type 'enum led_brightness' [-Wenum-conversion]
+                        LED_SWITCH_ON);
+                        ^~~~~~~~~~~~~
+../drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c:245:4: warning: implicit conversion from enumeration type 'enum cam_flash_switch_trigger_ops' to different enumeration type 'enum led_brightness' [-Wenum-conversion]
+                        LED_SWITCH_OFF);
+                        ^~~~~~~~~~~~~~
+2 warnings generated.
+../drivers/nfc/pn553-i2c/pn553.c:1260:32: warning: implicit conversion from enumeration type 'enum jcop_dwnld_state' to different enumeration type 'p61_access_state_t' (aka 'enum p61_access_state') [-Wenum-conversion]
+                signal_handler(JCP_DWNLD_INIT, pn544_dev->nfc_service_pid);
+                ~~~~~~~~~~~~~~ ^~~~~~~~~~~~~~
+../drivers/nfc/pn553-i2c/pn553.c:1289:32: warning: implicit conversion from enumeration type 'enum jcop_dwnld_state' to different enumeration type 'p61_access_state_t' (aka 'enum p61_access_state') [-Wenum-conversion]
+                signal_handler(JCP_DWP_DWNLD_COMPLETE, pn544_dev->nfc_service_pid);
+                ~~~~~~~~~~~~~~ ^~~~~~~~~~~~~~~~~~~~~~
+2 warnings generated.
+<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
+ .pushsection .altinstr_replacement, "ax"
+ ^
+<instantiation>:1:1: note: while in macro instantiation
+alternative_else
+^
+<instantiation>:5:1: note: while in macro instantiation
+alternative_else_nop_endif
+^
+<instantiation>:1:1: note: while in macro instantiation
+uaccess_ttbr0_enable x2, x3, x4
+^
+../arch/arm64/lib/clear_user.S:33:2: note: while in macro instantiation
+ uaccess_enable_not_uao x2, x3, x4
+ ^
+../arch/arm64/lib/clear_user.S:57:2: warning: DWARF2 only supports one section per compilation unit
+ .section .fixup,"ax"
+ ^
+<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
+ .pushsection .altinstr_replacement, "ax"
+ ^
+<instantiation>:1:1: note: while in macro instantiation
+alternative_else
+^
+<instantiation>:5:1: note: while in macro instantiation
+alternative_else_nop_endif
+^
+<instantiation>:1:1: note: while in macro instantiation
+uaccess_ttbr0_enable x3, x4, x5
+^
+../arch/arm64/lib/copy_from_user.S:67:2: note: while in macro instantiation
+ uaccess_enable_not_uao x3, x4, x5
+ ^
+../arch/arm64/lib/copy_from_user.S:75:2: warning: DWARF2 only supports one section per compilation unit
+ .section .fixup,"ax"
+ ^
+<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
+ .pushsection .altinstr_replacement, "ax"
+ ^
+<instantiation>:1:1: note: while in macro instantiation
+alternative_else
+^
+<instantiation>:5:1: note: while in macro instantiation
+alternative_else_nop_endif
+^
+<instantiation>:1:1: note: while in macro instantiation
+uaccess_ttbr0_enable x3, x4, x5
+^
+../arch/arm64/lib/copy_in_user.S:68:2: note: while in macro instantiation
+ uaccess_enable_not_uao x3, x4, x5
+ ^
+../arch/arm64/lib/copy_in_user.S:76:2: warning: DWARF2 only supports one section per compilation unit
+ .section .fixup,"ax"
+ ^
+<instantiation>:5:2: warning: DWARF2 only supports one section per compilation unit
+ .pushsection .altinstr_replacement, "ax"
+ ^
+../arch/arm64/lib/copy_page.S:32:1: note: while in macro instantiation
+alternative_if 8
+^
+<instantiation>:3:2: warning: DWARF2 only supports one section per compilation unit
+ .pushsection .altinstr_replacement, "ax"
+ ^
+<instantiation>:1:1: note: while in macro instantiation
+alternative_else
+^
+<instantiation>:5:1: note: while in macro instantiation
+alternative_else_nop_endif
+^
+<instantiation>:1:1: note: while in macro instantiation
+uaccess_ttbr0_enable x3, x4, x5
+^
+../arch/arm64/lib/copy_to_user.S:66:2: note: while in macro instantiation
+ uaccess_enable_not_uao x3, x4, x5
+ ^
+../arch/arm64/lib/copy_to_user.S:74:2: warning: DWARF2 only supports one section per compilation unit
+ .section .fixup,"ax"
+ ^
+/tmp/memcpy-ac335b.s:569:1: error: memcpy changed binding to STB_GLOBAL
+.globl memcpy ; .align 4 ; memcpy:
+^
+make-4.3[2]: *** [../scripts/Makefile.build:442: arch/arm64/lib/memcpy.o] Error 1
+make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1145: arch/arm64/lib] Error 2
 make-4.3[1]: *** Waiting for unfinished jobs....
-make-4.3[3]: *** [../scripts/Makefile.build:656: techpack/audio/ipc] Interrupt
-make-4.3[2]: *** [../scripts/Makefile.build:656: techpack/audio] Interrupt
-make-4.3[1]: *** [/home/decrypt/kernel_realme/Makefile:1145: techpack] Interrupt
-make-4.3: *** [Makefile:152: sub-make] Interrupt
+make-4.3: *** [Makefile:152: sub-make] Error 2
