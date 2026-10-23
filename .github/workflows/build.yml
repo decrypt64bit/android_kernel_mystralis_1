@@ -18,14 +18,11 @@ concurrency:
 
 env:
   KERNEL_IMAGE: "Image.gz-dtb"
-  # In-kernel identity (uname / LOCALVERSION). The mglru flavor appends
-  # -mglru via the matrix. The device never appears in the in-kernel name.
-  KERNEL_NAME: "Mystralis-RUI1"
-  # GitHub-facing identity. The zip and release assets carry the device so
-  # the 5 Pro and XT builds never publish identical names.
-  RELEASE_BASE: "Mystralis-RUI1"
   PROTON_CLANG_REPO: "https://github.com/kdrag0n/proton-clang.git"
-  ANYKERNEL_REPO: "https://github.com/decrypt64bit/AnyKernel3.git"
+  # RUI1 AnyKernel base (kernel.string is rewritten per variant at packaging
+  # time so each zip reports its exact flavor: susfs / susfs-mglru).
+  ANYKERNEL_REPO: "https://github.com/decrypt64bit/anykernel_rmx1971_rui_one.git"
+  ANYKERNEL_BRANCH: "main"
   # Hookless KSU driver (backslashxx/KernelSU line, KSU_TAMPER_SYSCALL_TABLE,
   # no KPROBES dependency). Same driver the mystralis (RUI2) tree builds with.
   # v3.3.1+22 was renamed upstream to v3.3.1-22 (newest v3.3.1 tag).
@@ -46,32 +43,34 @@ jobs:
       fail-fast: false
       matrix:
         variant:
-          # Realme 5 Pro (RMX1971), classic LMK
+          # Realme 5 Pro (RMX1971), classic LMK. kname becomes the in-kernel
+          # LOCALVERSION (uname reads e.g. 4.9.309-Mystralis-RUI1-susfs-mglru)
+          # and the AnyKernel kernel.string (build name shown when flashing).
           - device: "5Pro"
             codename: "RMX1971"
             defconfig: "RMX1971_defconfig"
             mglru: false
             flavor: "susfs"
-            kname: "Mystralis-RUI1"
+            kname: "Mystralis-RUI1-susfs"
           - device: "5Pro"
             codename: "RMX1971"
             defconfig: "RMX1971_defconfig"
             mglru: true
             flavor: "susfs-mglru"
-            kname: "Mystralis-RUI1-mglru"
+            kname: "Mystralis-RUI1-susfs-mglru"
           # Realme XT (RMX1921), classic LMK
           - device: "XT"
             codename: "RMX1921"
             defconfig: "RMX1921_defconfig"
             mglru: false
             flavor: "susfs"
-            kname: "Mystralis-RUI1"
+            kname: "Mystralis-RUI1-susfs"
           - device: "XT"
             codename: "RMX1921"
             defconfig: "RMX1921_defconfig"
             mglru: true
             flavor: "susfs-mglru"
-            kname: "Mystralis-RUI1-mglru"
+            kname: "Mystralis-RUI1-susfs-mglru"
 
     steps:
       - name: Checkout kernel source
@@ -99,7 +98,7 @@ jobs:
 
       - name: Set up AnyKernel3
         run: |
-          git clone --depth 1 -b r5p $ANYKERNEL_REPO .deps/AnyKernel3
+          git clone --depth 1 -b "$ANYKERNEL_BRANCH" "$ANYKERNEL_REPO" .deps/AnyKernel3
 
       - name: Integrate KernelSU (hookless)
         run: |
@@ -211,6 +210,15 @@ jobs:
           mkdir -p .deps/AnyKernel3_staging
           cp -r .deps/AnyKernel3/* .deps/AnyKernel3_staging/
           cp out/arch/arm64/boot/$KERNEL_IMAGE .deps/AnyKernel3_staging/
+
+          # The flash-time build name must read the exact variant (with RUI1),
+          # and the device check must match the target device of this zip.
+          sed -i "s|^kernel.string=.*|kernel.string=${{ matrix.variant.kname }} (${{ matrix.variant.codename }})|" anykernel.sh
+          if [ "${{ matrix.variant.codename }}" != "RMX1971" ]; then
+            sed -i "s/RMX1971/RMX1921/g" anykernel.sh
+          fi
+          echo "--- anykernel.sh identity ---"
+          grep -n "kernel.string\|device.name" anykernel.sh
 
           BUILD_DATE=$(date -u +%Y%m%d-%H%M)
           ZIP_NAME="${{ matrix.variant.kname }}-${{ matrix.variant.flavor }}-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
