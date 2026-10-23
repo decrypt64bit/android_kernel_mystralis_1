@@ -213,12 +213,12 @@ jobs:
 
           # The flash-time build name must read the exact variant (with RUI1),
           # and the device check must match the target device of this zip.
-          sed -i "s|^kernel.string=.*|kernel.string=${{ matrix.variant.kname }} (${{ matrix.variant.codename }})|" anykernel.sh
+          sed -i "s|^kernel.string=.*|kernel.string=${{ matrix.variant.kname }} (${{ matrix.variant.codename }})|" .deps/AnyKernel3_staging/anykernel.sh
           if [ "${{ matrix.variant.codename }}" != "RMX1971" ]; then
-            sed -i "s/RMX1971/RMX1921/g" anykernel.sh
+            sed -i "s/RMX1971/RMX1921/g" .deps/AnyKernel3_staging/anykernel.sh
           fi
           echo "--- anykernel.sh identity ---"
-          grep -n "kernel.string\|device.name" anykernel.sh
+          grep -n "kernel.string\|device.name" .deps/AnyKernel3_staging/anykernel.sh
 
           BUILD_DATE=$(date -u +%Y%m%d-%H%M)
           ZIP_NAME="${{ matrix.variant.kname }}-${{ matrix.variant.flavor }}-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
