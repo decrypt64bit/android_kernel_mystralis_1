@@ -221,7 +221,9 @@ jobs:
           grep -n "kernel.string\|device.name" .deps/AnyKernel3_staging/anykernel.sh
 
           BUILD_DATE=$(date -u +%Y%m%d-%H%M)
-          ZIP_NAME="${{ matrix.variant.kname }}-${{ matrix.variant.flavor }}-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
+          # kname already contains the flavor (Mystralis-RUI1-<flavor>),
+          # so the zip reads Mystralis-RUI1-<flavor>-<codename>-<datetime>.zip
+          ZIP_NAME="${{ matrix.variant.kname }}-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
 
           cd .deps/AnyKernel3_staging
           zip -r9 ../../artifacts/$ZIP_NAME . -x '.git*' 'README.md'
@@ -286,7 +288,15 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Mystralis RUI1 ${{ steps.tag.outputs.tag }}
-          body: ""
+          body: |
+            Mystralis-RUI1 kernel builds for RMX1971 (mystralis) / RMX1921 (Realme XT)
+
+            - KernelSU driver (backslashxx, uapi v6), hookless syscall-table mode
+            - SUSFS v1.5.5 (all variants)
+            - MGLRU backport (`-susfs-mglru` variants)
+            - Mystralis performance tuning (working-set protection, sysctls)
+
+            Flash via AnyKernel3 zip in recovery. Untested on device — flash at your own risk.
           fail_on_unmatched_files: false
           files: |
             release/*.zip
