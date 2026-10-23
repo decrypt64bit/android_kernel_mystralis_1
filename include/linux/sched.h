@@ -1861,6 +1861,10 @@ struct task_struct {
 	unsigned memcg_kmem_skip_account:1;
 #endif
 #endif
+#ifdef CONFIG_LRU_GEN
+	/* whether the LRU algorithm may apply to this access */
+	unsigned			in_lru_fault:1;
+#endif
 #ifdef CONFIG_COMPAT_BRK
 	unsigned brk_randomized:1;
 #endif
@@ -2278,6 +2282,10 @@ struct task_struct {
 	union reclaim_limit reclaim;
 #endif
 /* CPU-specific state of this task */
+#ifdef CONFIG_KSU_SUSFS
+	u64 susfs_task_state;
+	u64 susfs_last_fake_mnt_id;
+#endif
 	struct thread_struct thread;
 /*
  * WARNING: on x86, 'thread_struct' contains a variable-sized

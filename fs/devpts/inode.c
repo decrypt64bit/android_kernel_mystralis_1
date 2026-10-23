@@ -560,14 +560,6 @@ struct dentry *devpts_pty_new(struct pts_fs_info *fsi, int index, void *priv)
 	return dentry;
 }
 
-#ifdef CONFIG_KSU
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
-extern int ksu_handle_devpts(struct inode*);
-#else
-static int ksu_handle_devpts(struct inode* inode) { return 0; }
-#endif
-#endif
-
 /**
  * devpts_get_priv -- get private data for a slave
  * @pts_inode: inode of the slave
@@ -576,9 +568,6 @@ static int ksu_handle_devpts(struct inode* inode) { return 0; }
  */
 void *devpts_get_priv(struct dentry *dentry)
 {
-	#ifdef CONFIG_KSU
-	ksu_handle_devpts(dentry->d_inode);
-	#endif
 	if (dentry->d_sb->s_magic != DEVPTS_SUPER_MAGIC)
 		return NULL;
 	return dentry->d_fsdata;

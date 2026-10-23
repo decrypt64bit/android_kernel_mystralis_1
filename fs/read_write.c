@@ -582,18 +582,6 @@ static inline void file_pos_write(struct file *file, loff_t pos)
 		file->f_pos = pos;
 }
 
-#ifdef CONFIG_KSU
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
-extern bool ksu_vfs_read_hook __read_mostly;
-extern int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
-                               size_t *count_ptr);
-#else
-static bool ksu_vfs_read_hook __read_mostly = false;
-static int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
-                               size_t *count_ptr) { return 0; }
-#endif
-#endif
-
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
 	struct fd f = fdget_pos(fd);
@@ -601,11 +589,6 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
-
-#ifdef CONFIG_KSU
-		if (unlikely(ksu_vfs_read_hook))
-			ksu_handle_sys_read(fd, &buf, &count);
-#endif
 
 		ret = vfs_read(f.file, buf, count, &pos);
 		if (ret >= 0)
@@ -615,18 +598,6 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 	return ret;
 }
 
-#ifdef CONFIG_KSU
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
-extern bool ksu_vfs_write_hook __read_mostly;
-extern int ksu_handle_sys_write(unsigned int fd, const char __user **buf_ptr,
-                                size_t *count_ptr);
-#else
-static bool ksu_vfs_write_hook __read_mostly = false;
-static int ksu_handle_sys_write(unsigned int fd, const char __user **buf_ptr,
-                                size_t *count_ptr) { return 0; }
-#endif
-#endif
-
 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf, size_t, count)
 {
 	struct fd f = fdget_pos(fd);
@@ -634,11 +605,6 @@ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf, size_t, count
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
-
-#ifdef CONFIG_KSU
-		if (unlikely(ksu_vfs_write_hook))
-			ksu_handle_sys_write(fd, &buf, &count);
-#endif
 
 		ret = vfs_write(f.file, buf, count, &pos);
 		if (ret >= 0)
