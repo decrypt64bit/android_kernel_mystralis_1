@@ -126,3 +126,5 @@ Android.bp
 
 # kernel build output directory
 out/
+build_error.log
+integrity_check.sh

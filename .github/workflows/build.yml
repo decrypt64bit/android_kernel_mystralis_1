@@ -1,0 +1,283 @@
+name: Build Mystralis RUI1 Kernel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish a GitHub release after a successful build"
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KERNEL_IMAGE: "Image.gz-dtb"
+  # In-kernel identity (uname / LOCALVERSION). The mglru flavor appends
+  # -mglru via the matrix. The device never appears in the in-kernel name.
+  KERNEL_NAME: "Mystralis-RUI1"
+  # GitHub-facing identity. The zip and release assets carry the device so
+  # the 5 Pro and XT builds never publish identical names.
+  RELEASE_BASE: "Mystralis-RUI1"
+  PROTON_CLANG_REPO: "https://github.com/kdrag0n/proton-clang.git"
+  ANYKERNEL_REPO: "https://github.com/decrypt64bit/AnyKernel3.git"
+  # Hookless KSU driver (backslashxx/KernelSU line, KSU_TAMPER_SYSCALL_TABLE,
+  # no KPROBES dependency). Same driver the mystralis (RUI2) tree builds with.
+  KERNELSU_REPO: "https://github.com/backslashxx/KernelSU"
+  KERNELSU_SETUP_BRANCH: v3.3.1+22
+  KBUILD_BUILD_USER: "@decrypt64bit"
+  KBUILD_BUILD_HOST: "ubuntu-24.04"
+
+jobs:
+  build:
+    name: Build Kernel Artifacts (${{ matrix.variant.codename }} / ${{ matrix.variant.flavor }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      # Without this, one variant failing cancels the others, and since the
+      # release job needs the whole matrix it would never publish.
+      fail-fast: false
+      matrix:
+        variant:
+          # Realme 5 Pro (RMX1971), classic LMK
+          - device: "5Pro"
+            codename: "RMX1971"
+            defconfig: "RMX1971_defconfig"
+            mglru: false
+            flavor: "susfs"
+            kname: "Mystralis-RUI1"
+          - device: "5Pro"
+            codename: "RMX1971"
+            defconfig: "RMX1971_defconfig"
+            mglru: true
+            flavor: "susfs-mglru"
+            kname: "Mystralis-RUI1-mglru"
+          # Realme XT (RMX1921), classic LMK
+          - device: "XT"
+            codename: "RMX1921"
+            defconfig: "RMX1921_defconfig"
+            mglru: false
+            flavor: "susfs"
+            kname: "Mystralis-RUI1"
+          - device: "XT"
+            codename: "RMX1921"
+            defconfig: "RMX1921_defconfig"
+            mglru: true
+            flavor: "susfs-mglru"
+            kname: "Mystralis-RUI1-mglru"
+
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v6
+        with:
+          # Shallow checkout is enough (no rebase); speeds up CI a lot.
+          fetch-depth: 1
+
+      - name: Restore ccache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+        with:
+          key: ${{ runner.os }}-sdm670-kernel-rui1
+          max-size: 10G
+
+      - name: Install Host Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison build-essential ccache cpio flex git libelf-dev lld \
+            libncurses5-dev libssl-dev make rsync unzip zip python3 python-is-python3
+
+      - name: Set up Toolchain
+        run: |
+          git clone --depth 1 $PROTON_CLANG_REPO .deps/proton-clang
+
+      - name: Set up AnyKernel3
+        run: |
+          git clone --depth 1 -b r5p $ANYKERNEL_REPO .deps/AnyKernel3
+
+      - name: Integrate KernelSU (hookless)
+        run: |
+          set -eu
+          # Inline equivalent of kernel/setup.sh, but cloning KERNELSU_REPO
+          # instead of the URL that script hardcodes.
+          git clone --depth 1 -b "$KERNELSU_SETUP_BRANCH" "$KERNELSU_REPO" KernelSU
+          git -C KernelSU rev-parse HEAD
+          DRIVER_DIR=drivers
+          test -d "$DRIVER_DIR" || { echo "no $DRIVER_DIR"; exit 1; }
+          ln -sf "$(realpath --relative-to="$DRIVER_DIR" "$GITHUB_WORKSPACE/KernelSU/kernel")" "$DRIVER_DIR/kernelsu"
+          grep -q "kernelsu" "$DRIVER_DIR/Makefile" || printf "\nobj-\$(CONFIG_KSU) += kernelsu/\n" >> "$DRIVER_DIR/Makefile"
+          grep -q 'source "drivers/kernelsu/Kconfig"' "$DRIVER_DIR/Kconfig" || sed -i '/endmenu/i source "drivers/kernelsu/Kconfig"' "$DRIVER_DIR/Kconfig"
+          echo "--- Makefile tail ---"; tail -3 "$DRIVER_DIR/Makefile"
+          echo "--- Kconfig around endmenu ---"; grep -n -B1 -A1 'kernelsu' "$DRIVER_DIR/Kconfig"
+
+      - name: Apply SUSFS KernelSU hooks
+        run: |
+          set -eu
+          # SUSFS v1.5.5 needs two KernelSU-side hooks (mark non-root app
+          # tasks, run the SUSFS try_umount list); everything else lives in
+          # fs/susfs_kernel.c in this tree.
+          git -C KernelSU apply --verbose "$GITHUB_WORKSPACE/susfs/20_ksu_susfs_minimal.patch"
+
+      - name: Configure and Build Kernel
+        env:
+          KERNEL_DEFCONFIG: ${{ matrix.variant.defconfig }}
+        run: |
+          mkdir -p out
+
+          TC_PATH="${{ github.workspace }}/.deps/proton-clang/bin"
+          export HOSTCFLAGS="-Wno-unused-command-line-argument"
+
+          make O=out ARCH=arm64 \
+            CC="$TC_PATH/clang" \
+            CROSS_COMPILE="$TC_PATH/aarch64-linux-gnu-" \
+            $KERNEL_DEFCONFIG
+
+          # The MGLRU mm/ backport is compiled in on this tree; the plain
+          # susfs flavor turns it off at config level, susfs-mglru keeps it.
+          if [ "${{ matrix.variant.mglru }}" = "false" ]; then
+            ./scripts/config --file out/.config --disable LRU_GEN
+          fi
+
+          ./scripts/config --file out/.config \
+             --set-str CONFIG_LOCALVERSION "-${{ matrix.variant.kname }}"
+
+          # SUSFS v1.5.5 (fs/Kconfig menu "KernelSU - SUSFS"). sus_su stays
+          # off: it needs KernelSU hooks the backslashxx rewrite lacks.
+          ./scripts/config --file out/.config \
+             --enable CONFIG_KSU_SUSFS \
+             --enable CONFIG_KSU_SUSFS_SUS_PATH \
+             --enable CONFIG_KSU_SUSFS_SUS_MOUNT \
+             --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT \
+             --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT \
+             --enable CONFIG_KSU_SUSFS_SUS_KSTAT \
+             --enable CONFIG_KSU_SUSFS_SUS_OVERLAYFS \
+             --enable CONFIG_KSU_SUSFS_TRY_UMOUNT \
+             --enable CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT \
+             --enable CONFIG_KSU_SUSFS_SPOOF_UNAME \
+             --enable CONFIG_KSU_SUSFS_ENABLE_LOG \
+             --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+             --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+             --enable CONFIG_KSU_SUSFS_OPEN_REDIRECT
+
+          make O=out ARCH=arm64 \
+            CC="$TC_PATH/clang" \
+            CROSS_COMPILE="$TC_PATH/aarch64-linux-gnu-" \
+            CROSS_COMPILE_ARM32="$TC_PATH/arm-linux-gnueabi-" \
+            olddefconfig
+
+          make -j$(nproc --all) O=out ARCH=arm64 \
+            CC="ccache $TC_PATH/clang" \
+            LD="$TC_PATH/ld.lld" \
+            AR="$TC_PATH/llvm-ar" \
+            NM="$TC_PATH/llvm-nm" \
+            OBJCOPY="$TC_PATH/llvm-objcopy" \
+            OBJDUMP="$TC_PATH/llvm-objdump" \
+            READELF="$TC_PATH/llvm-readelf" \
+            STRIP="$TC_PATH/llvm-strip" \
+            CROSS_COMPILE="$TC_PATH/aarch64-linux-gnu-" \
+            CROSS_COMPILE_ARM32="$TC_PATH/arm-linux-gnueabi-" \
+            LLVM=1 LLVM_IAS=1
+
+      - name: Verify SUSFS and MGLRU configuration
+        run: |
+          set -eu
+          grep -q '^CONFIG_KSU_SUSFS=y' out/.config
+          grep -q '^CONFIG_KSU_SUSFS_SUS_MOUNT=y' out/.config
+          grep -q '^CONFIG_KSU_SUSFS_TRY_UMOUNT=y' out/.config
+          test -f out/fs/susfs.o
+          test -f out/fs/susfs_kernel.o
+          if [ "${{ matrix.variant.mglru }}" = "true" ]; then
+            grep -qx 'CONFIG_LRU_GEN=y' out/.config || {
+              echo "susfs-mglru flavor must keep CONFIG_LRU_GEN enabled" >&2; exit 1; }
+          else
+            grep -qx '# CONFIG_LRU_GEN is not set' out/.config || {
+              echo "plain susfs flavor must have CONFIG_LRU_GEN disabled" >&2; exit 1; }
+          fi
+          echo "SUSFS objects present, config verified"
+
+      - name: Package AnyKernel3
+        id: package
+        run: |
+          mkdir -p artifacts
+          cp out/arch/arm64/boot/$KERNEL_IMAGE artifacts/
+          cp out/.config artifacts/kernel.config
+
+          mkdir -p .deps/AnyKernel3_staging
+          cp -r .deps/AnyKernel3/* .deps/AnyKernel3_staging/
+          cp out/arch/arm64/boot/$KERNEL_IMAGE .deps/AnyKernel3_staging/
+
+          BUILD_DATE=$(date -u +%Y%m%d-%H%M)
+          ZIP_NAME="${{ matrix.variant.kname }}-${{ matrix.variant.flavor }}-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
+
+          cd .deps/AnyKernel3_staging
+          zip -r9 ../../artifacts/$ZIP_NAME . -x '.git*' 'README.md'
+          cd ../..
+
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kernel-build-artifacts-${{ matrix.variant.codename }}-${{ matrix.variant.flavor }}
+          path: artifacts/*
+
+  release:
+    name: Publish Release
+    needs: build
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
+    if: >-
+      ${{ (inputs.publish_release == true)
+          || (github.event.inputs.publish_release == 'true') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Compute release tag
+        id: tag
+        run: |
+          TAG="Mystralis-RUI1-$(date -u +%Y-%m-%d)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+
+      - name: Clean old assets from today's release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          # If the release already exists, delete assets whose names start
+          # with the kernel name so a same-day rebuild replaces them.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG exists, cleaning old assets from this branch..."
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | \
+              grep "^Mystralis-RUI1" | while read -r asset; do
+                echo "  deleting $asset"
+                gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes || true
+              done
+          else
+            echo "Release $TAG does not exist yet, will be created."
+          fi
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Mystralis RUI1 ${{ steps.tag.outputs.tag }}
+          body: ""
+          fail_on_unmatched_files: false
+          files: |
+            release/*.zip
