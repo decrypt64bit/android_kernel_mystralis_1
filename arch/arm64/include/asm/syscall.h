@@ -19,6 +19,7 @@
 #include <uapi/linux/audit.h>
 #include <linux/compat.h>
 #include <linux/err.h>
+#include <asm/ptrace.h>
 
 extern const void *sys_call_table[];
 
