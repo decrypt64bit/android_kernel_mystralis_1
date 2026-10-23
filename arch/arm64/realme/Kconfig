@@ -19,6 +19,18 @@ config PRODUCT_REALME_RMX1901
 	help
 	  This enables support for Realme X.
 
+config PRODUCT_REALME_RMX1971
+	bool "Realme 5 Pro"
+	select PRODUCT_REALME_SDM710
+	help
+	  This enables support for Realme 5 Pro (RMX1971).
+
+config PRODUCT_REALME_RMX1921
+	bool "Realme XT"
+	select PRODUCT_REALME_SDM710
+	help
+	  This enables support for Realme XT (RMX1921).
+
 endchoice
 
 endif
