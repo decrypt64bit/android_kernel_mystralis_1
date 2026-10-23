@@ -28,8 +28,9 @@ env:
   ANYKERNEL_REPO: "https://github.com/decrypt64bit/AnyKernel3.git"
   # Hookless KSU driver (backslashxx/KernelSU line, KSU_TAMPER_SYSCALL_TABLE,
   # no KPROBES dependency). Same driver the mystralis (RUI2) tree builds with.
+  # v3.3.1+22 was renamed upstream to v3.3.1-22 (newest v3.3.1 tag).
   KERNELSU_REPO: "https://github.com/backslashxx/KernelSU"
-  KERNELSU_SETUP_BRANCH: v3.3.1+22
+  KERNELSU_SETUP_BRANCH: v3.3.1-22
   KBUILD_BUILD_USER: "@decrypt64bit"
   KBUILD_BUILD_HOST: "ubuntu-24.04"
 
