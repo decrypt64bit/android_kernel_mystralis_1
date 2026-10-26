@@ -1,14 +1,14 @@
-name: Build Mystralis RUI1 Kernel
+name: Build Mystralis RUI1 Kernel (BISECT KSU-only)
 
 on:
   push:
     branches:
-      - main
+      - mystralis-rui1-bisect
   workflow_dispatch:
     inputs:
-      publish_release:
-        description: "Publish a GitHub release after a successful build"
-        required: true
+      noop:
+        description: "Manual re-run of the bisect build"
+        required: false
         default: false
         type: boolean
 
@@ -19,13 +19,11 @@ concurrency:
 env:
   KERNEL_IMAGE: "Image.gz-dtb"
   PROTON_CLANG_REPO: "https://github.com/kdrag0n/proton-clang.git"
-  # RUI1 AnyKernel base (kernel.string is rewritten per variant at packaging
-  # time so each zip reports its exact flavor: susfs / susfs-mglru).
+  # Same AnyKernel base the main branch uses; kernel.string is rewritten below.
   ANYKERNEL_REPO: "https://github.com/decrypt64bit/anykernel_rmx1971_rui_one.git"
   ANYKERNEL_BRANCH: "main"
   # Hookless KSU driver (backslashxx/KernelSU line, KSU_TAMPER_SYSCALL_TABLE,
-  # no KPROBES dependency). Same driver the mystralis (RUI2) tree builds with.
-  # v3.3.1+22 was renamed upstream to v3.3.1-22 (newest v3.3.1 tag).
+  # no KPROBES dependency). v3.3.1+22 was renamed upstream to v3.3.1-22.
   KERNELSU_REPO: "https://github.com/backslashxx/KernelSU"
   KERNELSU_SETUP_BRANCH: v3.3.1-22
   KBUILD_BUILD_USER: "@decrypt64bit"
@@ -33,50 +31,32 @@ env:
 
 jobs:
   build:
-    name: Build Kernel Artifacts (${{ matrix.variant.codename }} / ${{ matrix.variant.flavor }})
+    name: BISECT KSU-only (${{ matrix.variant.codename }})
     runs-on: ubuntu-24.04
     permissions:
       contents: read
     strategy:
-      # Without this, one variant failing cancels the others, and since the
-      # release job needs the whole matrix it would never publish.
       fail-fast: false
       matrix:
         variant:
-          # Realme 5 Pro (RMX1971), classic LMK. kname becomes the in-kernel
-          # LOCALVERSION (uname reads e.g. 4.9.309-Mystralis-RUI1-susfs-mglru)
-          # and the AnyKernel kernel.string (build name shown when flashing).
+          # Boot bisect step A: base tree + hookless backslashxx KSU only.
+          # All SUSFS kernel-side code is compiled out (CONFIG_KSU_SUSFS=n)
+          # and MGLRU is off (CONFIG_LRU_GEN=n). Everything else (toolchain,
+          # linker flags, DTB, AnyKernel, device) is identical to the main
+          # branch's failing builds, so a boot here isolates the failure to
+          # the SUSFS or MGLRU port; a failure here indicts the base+driver
+          # or the packaging instead.
           - device: "5Pro"
             codename: "RMX1971"
             defconfig: "RMX1971_defconfig"
-            mglru: false
-            flavor: "susfs"
-            kname: "Mystralis-RUI1-susfs"
-          - device: "5Pro"
-            codename: "RMX1971"
-            defconfig: "RMX1971_defconfig"
-            mglru: true
-            flavor: "susfs-mglru"
-            kname: "Mystralis-RUI1-susfs-mglru"
-          # Realme XT (RMX1921), classic LMK
           - device: "XT"
             codename: "RMX1921"
             defconfig: "RMX1921_defconfig"
-            mglru: false
-            flavor: "susfs"
-            kname: "Mystralis-RUI1-susfs"
-          - device: "XT"
-            codename: "RMX1921"
-            defconfig: "RMX1921_defconfig"
-            mglru: true
-            flavor: "susfs-mglru"
-            kname: "Mystralis-RUI1-susfs-mglru"
 
     steps:
       - name: Checkout kernel source
         uses: actions/checkout@v6
         with:
-          # Shallow checkout is enough (no rebase); speeds up CI a lot.
           fetch-depth: 1
 
       - name: Restore ccache
@@ -115,15 +95,7 @@ jobs:
           echo "--- Makefile tail ---"; tail -3 "$DRIVER_DIR/Makefile"
           echo "--- Kconfig around endmenu ---"; grep -n -B1 -A1 'kernelsu' "$DRIVER_DIR/Kconfig"
 
-      - name: Apply SUSFS KernelSU hooks
-        run: |
-          set -eu
-          # SUSFS v1.5.5 needs two KernelSU-side hooks (mark non-root app
-          # tasks, run the SUSFS try_umount list); everything else lives in
-          # fs/susfs_kernel.c in this tree.
-          git -C KernelSU apply --verbose "$GITHUB_WORKSPACE/susfs/20_ksu_susfs_minimal.patch"
-
-      - name: Configure and Build Kernel
+      - name: Configure and Build Kernel (KSU only, no SUSFS, no MGLRU)
         env:
           KERNEL_DEFCONFIG: ${{ matrix.variant.defconfig }}
         run: |
@@ -137,32 +109,15 @@ jobs:
             CROSS_COMPILE="$TC_PATH/aarch64-linux-gnu-" \
             $KERNEL_DEFCONFIG
 
-          # The MGLRU mm/ backport is compiled in on this tree; the plain
-          # susfs flavor turns it off at config level, susfs-mglru keeps it.
-          if [ "${{ matrix.variant.mglru }}" = "false" ]; then
-            ./scripts/config --file out/.config --disable LRU_GEN
-          fi
+          # BISECT: compile out every SUSFS kernel-side hook and MGLRU. The
+          # SUSFS tree code stays (it is #ifdef-guarded) but none of it is
+          # built, and the KSU-side susfs patch is deliberately not applied.
+          ./scripts/config --file out/.config \
+             --disable KSU_SUSFS \
+             --disable LRU_GEN
 
           ./scripts/config --file out/.config \
-             --set-str CONFIG_LOCALVERSION "-${{ matrix.variant.kname }}"
-
-          # SUSFS v1.5.5 (fs/Kconfig menu "KernelSU - SUSFS"). sus_su stays
-          # off: it needs KernelSU hooks the backslashxx rewrite lacks.
-          ./scripts/config --file out/.config \
-             --enable CONFIG_KSU_SUSFS \
-             --enable CONFIG_KSU_SUSFS_SUS_PATH \
-             --enable CONFIG_KSU_SUSFS_SUS_MOUNT \
-             --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT \
-             --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT \
-             --enable CONFIG_KSU_SUSFS_SUS_KSTAT \
-             --enable CONFIG_KSU_SUSFS_SUS_OVERLAYFS \
-             --enable CONFIG_KSU_SUSFS_TRY_UMOUNT \
-             --enable CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT \
-             --enable CONFIG_KSU_SUSFS_SPOOF_UNAME \
-             --enable CONFIG_KSU_SUSFS_ENABLE_LOG \
-             --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-             --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-             --enable CONFIG_KSU_SUSFS_OPEN_REDIRECT
+             --set-str CONFIG_LOCALVERSION "-Mystralis-RUI1-ksuonly"
 
           make O=out ARCH=arm64 \
             CC="$TC_PATH/clang" \
@@ -183,22 +138,18 @@ jobs:
             CROSS_COMPILE_ARM32="$TC_PATH/arm-linux-gnueabi-" \
             LLVM=1 LLVM_IAS=1
 
-      - name: Verify SUSFS and MGLRU configuration
+      - name: Verify KSU-only configuration
         run: |
           set -eu
-          grep -q '^CONFIG_KSU_SUSFS=y' out/.config
-          grep -q '^CONFIG_KSU_SUSFS_SUS_MOUNT=y' out/.config
-          grep -q '^CONFIG_KSU_SUSFS_TRY_UMOUNT=y' out/.config
-          test -f out/fs/susfs.o
-          test -f out/fs/susfs_kernel.o
-          if [ "${{ matrix.variant.mglru }}" = "true" ]; then
-            grep -qx 'CONFIG_LRU_GEN=y' out/.config || {
-              echo "susfs-mglru flavor must keep CONFIG_LRU_GEN enabled" >&2; exit 1; }
-          else
-            grep -qx '# CONFIG_LRU_GEN is not set' out/.config || {
-              echo "plain susfs flavor must have CONFIG_LRU_GEN disabled" >&2; exit 1; }
-          fi
-          echo "SUSFS objects present, config verified"
+          grep -q '^CONFIG_KSU=y' out/.config
+          grep -qx '# CONFIG_KSU_SUSFS is not set' out/.config || {
+            echo "BISECT build must have CONFIG_KSU_SUSFS disabled" >&2; exit 1; }
+          grep -qx '# CONFIG_LRU_GEN is not set' out/.config || {
+            echo "BISECT build must have CONFIG_LRU_GEN disabled" >&2; exit 1; }
+          test -d out/drivers/kernelsu || { echo "KSU driver not built" >&2; exit 1; }
+          ! test -f out/fs/susfs.o
+          ! test -f out/fs/susfs_kernel.o
+          echo "KSU-only bisect config verified"
 
       - name: Package AnyKernel3
         id: package
@@ -211,9 +162,9 @@ jobs:
           cp -r .deps/AnyKernel3/* .deps/AnyKernel3_staging/
           cp out/arch/arm64/boot/$KERNEL_IMAGE .deps/AnyKernel3_staging/
 
-          # The flash-time build name must read the exact variant (with RUI1),
-          # and the device check must match the target device of this zip.
-          sed -i "s|^kernel.string=.*|kernel.string=${{ matrix.variant.kname }} (${{ matrix.variant.codename }})|" .deps/AnyKernel3_staging/anykernel.sh
+          # The flash-time build name must read the exact bisect variant, and
+          # the device check must match the target device of this zip.
+          sed -i "s|^kernel.string=.*|kernel.string=Mystralis-RUI1-ksuonly (${{ matrix.variant.codename }})|" .deps/AnyKernel3_staging/anykernel.sh
           if [ "${{ matrix.variant.codename }}" != "RMX1971" ]; then
             sed -i "s/RMX1971/RMX1921/g" .deps/AnyKernel3_staging/anykernel.sh
           fi
@@ -221,9 +172,7 @@ jobs:
           grep -n "kernel.string\|device.name" .deps/AnyKernel3_staging/anykernel.sh
 
           BUILD_DATE=$(date -u +%Y%m%d-%H%M)
-          # kname already contains the flavor (Mystralis-RUI1-<flavor>),
-          # so the zip reads Mystralis-RUI1-<flavor>-<codename>-<datetime>.zip
-          ZIP_NAME="${{ matrix.variant.kname }}-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
+          ZIP_NAME="Mystralis-RUI1-ksuonly-${{ matrix.variant.codename }}-${BUILD_DATE}.zip"
 
           cd .deps/AnyKernel3_staging
           zip -r9 ../../artifacts/$ZIP_NAME . -x '.git*' 'README.md'
@@ -235,68 +184,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: kernel-build-artifacts-${{ matrix.variant.codename }}-${{ matrix.variant.flavor }}
+          name: kernel-build-artifacts-ksuonly-${{ matrix.variant.codename }}
           path: artifacts/*
-
-  release:
-    name: Publish Release
-    needs: build
-    concurrency:
-      group: publish-release
-      cancel-in-progress: false
-    if: >-
-      ${{ (inputs.publish_release == true)
-          || (github.event.inputs.publish_release == 'true') }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: release
-          merge-multiple: true
-
-      - name: Compute release tag
-        id: tag
-        run: |
-          TAG="Mystralis-RUI1-$(date -u +%Y-%m-%d)"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Release tag: $TAG"
-
-      - name: Clean old assets from today's release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          # If the release already exists, delete assets whose names start
-          # with the kernel name so a same-day rebuild replaces them.
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "Release $TAG exists, cleaning old assets from this branch..."
-            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | \
-              grep "^Mystralis-RUI1" | while read -r asset; do
-                echo "  deleting $asset"
-                gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes || true
-              done
-          else
-            echo "Release $TAG does not exist yet, will be created."
-          fi
-
-      - name: Create or update release
-        uses: softprops/action-gh-release@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: Mystralis RUI1 ${{ steps.tag.outputs.tag }}
-          body: |
-            Mystralis-RUI1 kernel builds for RMX1971 (mystralis) / RMX1921 (Realme XT)
-
-            - KernelSU driver (backslashxx, uapi v6), hookless syscall-table mode
-            - SUSFS v1.5.5 (all variants)
-            - MGLRU backport (`-susfs-mglru` variants)
-            - Mystralis performance tuning (working-set protection, sysctls)
-
-            Flash via AnyKernel3 zip in recovery. Untested on device — flash at your own risk.
-          fail_on_unmatched_files: false
-          files: |
-            release/*.zip
